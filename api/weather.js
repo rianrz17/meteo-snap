@@ -6,27 +6,25 @@
  */
 
 export default async function handler(req, res) {
-  // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  const { adm4 } = req.query;  // ← CHANGE from adm2
 
-  const { adm2 } = req.query;
-
-  // Validasi parameter
-  if (!adm2) {
+  if (!adm4) {
     return res.status(400).json({ 
-      error: 'Parameter adm2 diperlukan',
-      example: '/api/weather?adm2=64.08'
+      error: 'Parameter adm4 diperlukan (4-level wilayah code)',
+      example: '/api/weather?adm4=31.71.03.1001'
     });
   }
+
+  const bmkgUrl = `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${encodeURIComponent(adm4)}`;
+  // ... rest stays the same ...
+}
 
   try {
     // Fetch dari BMKG API dengan timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
 
-    const bmkgUrl = `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm2=${encodeURIComponent(adm2)}`;
+    const bmkgUrl = `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${encodeURIComponent(adm4)}`;
     
     console.log(`[PROXY] Fetching from BMKG: ${bmkgUrl}`);
 
@@ -55,10 +53,10 @@ export default async function handler(req, res) {
 
     // Validasi response format
     if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
-      console.warn(`[PROXY] Invalid BMKG response format for adm2=${adm2}`);
+      console.warn(`[PROXY] Invalid BMKG response format for adm4=${adm4}`);
       return res.status(502).json({
         error: 'Invalid response format from BMKG',
-        adm2: adm2
+        adm4: adm4
       });
     }
 
@@ -70,7 +68,7 @@ export default async function handler(req, res) {
       success: true,
       data: data.data,
       fetched_at: new Date().toISOString(),
-      adm2: adm2
+      adm4: adm4
     });
 
   } catch (error) {
@@ -88,7 +86,7 @@ export default async function handler(req, res) {
     return res.status(503).json({
       error: 'Service unavailable',
       message: error.message,
-      adm2: adm2
+      adm4: adm4
     });
   }
 }
