@@ -11,7 +11,7 @@ const REGIONS = [
   {name:"Kutai Barat", lat:-0.4639, lng:115.8336, score:38, risk:"Aman", phenomena:["Cerah Berawan"]},
   {name:"Mahakam Ulu", lat:0.8214, lng:114.9764, score:31, risk:"Aman", phenomena:["Cerah Berawan"]},
 ];
-const BMKG_ADM4 = {
+const BMKG_adm4 = {
   "Kutai Timur": "64.08.01.0001",      // adm4 format
   "Berau": "64.03.01.0001",
   "Kutai Kartanegara": "64.02.01.0001",
@@ -392,7 +392,7 @@ async function loadAllBMKGForecasts(){
   console.log('[LOAD] Starting BMKG forecast load for', REGIONS.length, 'regions');
 
   const results = await Promise.allSettled(
-    REGIONS.map(r => fetchBMKGForecast(BMKG_ADM4[r.name]))
+    REGIONS.map(r => fetchBMKGForecast(BMKG_adm4[r.name]))
   );
 
   let successCount = 0;
