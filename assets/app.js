@@ -354,7 +354,7 @@ async function fetchBMKGForecast(adm4, retries = 3){
         throw new Error('Forecast data tidak tersedia');
       }
       
-      console.log(`[FETCH] Success for adm2=${adm4}`);
+      console.log(`[FETCH] Success for adm4=${adm4}`);
       return item.cuaca[0][0]; // Return forecast entry
       
     } catch (error) {
@@ -392,7 +392,7 @@ async function loadAllBMKGForecasts(){
   console.log('[LOAD] Starting BMKG forecast load for', REGIONS.length, 'regions');
 
   const results = await Promise.allSettled(
-    REGIONS.map(r => fetchBMKGForecast(BMKG_ADM2[r.name]))
+    REGIONS.map(r => fetchBMKGForecast(BMKG_ADM4[r.name]))
   );
 
   let successCount = 0;
