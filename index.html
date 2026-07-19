@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>METEO SNAP v1.0 — Smart Meteorological Decision Brief</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="header-inner">
+    <div class="brand-row">
+      <div class="logo-badge"><img src="assets/logo-bmkg.png" alt="Logo BMKG" style="width:36px;height:36px;object-fit:contain;"></div>
+      <div class="brand-text">
+        <div class="gov-tag">Stasiun Meteorologi Kelas III APT Pranoto · BMKG</div>
+        <h1 class="brand-font">METEO SNAP <span style="font-size:.85rem; font-weight:400; opacity:.8;">v1.0</span></h1>
+        <div class="sub">Smart Meteorological Decision Brief</div>
+        <div class="tagline">"Dari Informasi Cuaca Menjadi Keputusan Cepat."</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle"><i class="fa-solid fa-moon"></i><span>Dark Mode</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="container-main">
+
+  <!-- Ringkasan Cuaca -->
+  <div class="section-label">Ringkasan Cuaca — Provinsi Kalimantan Timur</div>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon icon-status"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div><div class="label">Status Hari Ini</div><div class="value status-waspada">🟠 WASPADA</div></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon icon-fenomena"><i class="fa-solid fa-cloud-showers-heavy"></i></div>
+      <div><div class="label">Fenomena Dominan</div><div class="value">Hujan Lebat &amp; Angin Kencang</div></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon icon-update"><i class="fa-regular fa-clock"></i></div>
+      <div><div class="label">Update Terakhir</div><div class="value" id="lastUpdate">09.00 WITA</div><div class="priority-sub">Periode potensi: 19–20 Jul 2026</div></div>
+    </div>
+  </div>
+
+  <!-- BMKG Live Forecast -->
+  <div class="card-panel" style="margin-bottom:18px;">
+    <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+      <span>Prakiraan Cuaca BMKG (Real-time) - 10 Wilayah Kaltim</span>
+      <button class="btn btn-sm" id="bmkgRefreshBtn" style="background:var(--bmkg-navy); color:#fff; font-size:.7rem;">
+        <i class="fa-solid fa-rotate"></i> Perbarui
+      </button>
+    </div>
+    <div id="bmkgStatusLine" style="font-size:.75rem; color:var(--ink-soft); margin-bottom:10px;">Memuat data prakiraan dari data.bmkg.go.id ...</div>
+    <div id="bmkgForecastGrid" class="row g-2"></div>
+    <div style="font-size:.68rem; color:var(--ink-soft); margin-top:10px;">Sumber: Data Prakiraan Cuaca Terbuka BMKG (data.bmkg.go.id) - parameter wilayah (adm2) per kabupaten/kota.</div>
+  </div>
+
+  <!-- Priority + Map -->
+  <div class="main-grid">
+    <div class="card-panel">
+      <div class="section-label">Top Prioritas Wilayah (Ranking Otomatis)</div>
+      <div id="priorityList"></div>
+    </div>
+    <div class="card-panel">
+      <div class="section-label">Peta Risiko Kalimantan Timur</div>
+      <div style="position:relative;">
+        <div id="map"></div>
+        <div class="map-legend" id="mapLegend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-panel" style="margin-bottom:18px;">
+    <div class="section-label">Tren Status 7 Hari Terakhir</div>
+    <canvas id="trendChart" height="90"></canvas>
+  </div>
+
+  <!-- Impact + Recommendation -->
+  <div class="impact-grid">
+    <div class="card-panel">
+      <div class="section-label">Potensi Dampak</div>
+      <div id="impactList"></div>
+    </div>
+    <div class="card-panel">
+      <div class="section-label">Rekomendasi per Stakeholder</div>
+      <div id="stakeholderList"></div>
+    </div>
+  </div>
+
+  <!-- Sprint 2: Smart Engine -->
+  <div class="card-panel" style="margin-bottom:18px;">
+    <div class="section-label">Smart Engine — Simulasi IBF → Rekomendasi Otomatis (Sprint 2)</div>
+    <p style="font-size:.82rem; color:var(--ink-soft); margin-bottom:14px;">
+      Pilih wilayah dan tingkat risiko IBF (Impact-Based Forecast), lalu Smart Engine akan menyusun rekomendasi
+      per stakeholder secara otomatis berdasarkan aturan (rule-based) per level risiko.
+    </p>
+    <div class="row g-2 align-items-end mb-3">
+      <div class="col-md-4">
+        <label class="form-label" style="font-size:.75rem; font-weight:600;">Wilayah</label>
+        <select class="form-select form-select-sm" id="engineRegion"></select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" style="font-size:.75rem; font-weight:600;">Level Risiko IBF</label>
+        <select class="form-select form-select-sm" id="engineRisk">
+          <option value="Tinggi">🔴 Tinggi</option>
+          <option value="Waspada">🟠 Waspada</option>
+          <option value="Siaga">🟡 Siaga</option>
+          <option value="Aman">🟢 Aman</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-sm w-100" id="engineApply" style="background:var(--bmkg-navy); color:#fff; font-weight:600;">
+          <i class="fa-solid fa-diagram-project"></i> Terapkan IBF
+        </button>
+      </div>
+    </div>
+    <div id="engineOutput" class="row g-2"></div>
+  </div>
+
+  <!-- Generate Smart Brief -->
+  <div class="generate-zone">
+    <h3><i class="fa-solid fa-bolt"></i> Satu Klik, Satu Keputusan</h3>
+    <p>Mesin ini merangkum status, prioritas wilayah, potensi dampak, dan rekomendasi tiap instansi menjadi satu brief siap kirim — tanpa menyusun manual.</p>
+    <button class="btn-generate" id="generateBtn"><i class="fa-solid fa-wand-magic-sparkles"></i>GENERATE SMART BRIEF</button>
+  </div>
+
+  <!-- Product strip -->
+  <div class="product-strip">
+    <div class="section-label">Produk</div>
+    <div class="product-btns">
+      <div class="product-btn" id="btnWA"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp Brief</span></div>
+      <div class="product-btn" id="btnExec"><i class="fa-solid fa-file-lines"></i><span>Executive Brief</span></div>
+      <div class="product-btn" id="btnInfo"><i class="fa-solid fa-image"></i><span>Infografis</span></div>
+      <div class="product-btn" id="btnDash"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>METEO SNAP v1.0 — Prototipe PKA · Stasiun Meteorologi Kelas III APT Pranoto Samarinda, BMKG · Data ditampilkan adalah data dummy sementara</footer>
+
+<!-- WhatsApp Brief Modal -->
+<div class="modal fade" id="waModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="fa-brands fa-whatsapp text-success"></i> WhatsApp Brief — Preview</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="phone-mock">
+          <div class="phone-screen">
+            <div class="wa-header"><i class="fa-solid fa-circle-user"></i> BMKG Kaltim — Broadcast</div>
+            <div class="wa-body"><div class="wa-bubble" id="waBubbleContent">Klik "Generate Smart Brief" terlebih dahulu di dashboard untuk membuat isi brief.</div></div>
+          </div>
+        </div>
+        <div class="brief-actions">
+          <button class="btn btn-success btn-sm" id="copyWA"><i class="fa-solid fa-copy"></i> Salin Teks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Executive Brief Modal -->
+<div class="modal fade" id="execModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="fa-solid fa-file-lines"></i> Executive Brief — Preview</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="execBody" style="font-size:.9rem;">
+        Klik "Generate Smart Brief" di dashboard untuk menyusun executive brief otomatis.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
