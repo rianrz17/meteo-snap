@@ -316,13 +316,13 @@ function scoreForRisk(risk){
  * Fetch BMKG forecast via Vercel proxy function
  * Mengatasi CORS block dengan menggunakan server-side proxy
  */
-async function fetchBMKGForecast(adm2, retries = 3){
+async function fetchBMKGForecast(adm4, retries = 3){
   let lastError;
   
   for (let i = 0; i < retries; i++) {
     try {
       // Call ke proxy function (bukan langsung ke BMKG)
-      const proxyUrl = `/api/weather?adm2=${encodeURIComponent(adm2)}`;
+      const proxyUrl = `/api/weather?adm4=${encodeURIComponent(adm4)}`;
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 detik timeout
@@ -354,16 +354,16 @@ async function fetchBMKGForecast(adm2, retries = 3){
         throw new Error('Forecast data tidak tersedia');
       }
       
-      console.log(`[FETCH] Success for adm2=${adm2}`);
+      console.log(`[FETCH] Success for adm2=${adm4}`);
       return item.cuaca[0][0]; // Return forecast entry
       
     } catch (error) {
       lastError = error;
       
       if (error.name === 'AbortError') {
-        console.warn(`[FETCH] Timeout for adm2=${adm2} (attempt ${i + 1})`);
+        console.warn(`[FETCH] Timeout for adm4=${adm4} (attempt ${i + 1})`);
       } else {
-        console.warn(`[FETCH] Error for adm2=${adm2}: ${error.message} (attempt ${i + 1})`);
+        console.warn(`[FETCH] Error for adm4=${adm4}: ${error.message} (attempt ${i + 1})`);
       }
       
       // Tunggu sebelum retry (exponential backoff)
