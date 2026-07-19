@@ -2,19 +2,19 @@
  * Vercel Serverless Function - BMKG Weather API Proxy
  * Mengatasi CORS block dengan proxy dari server side.
  *
- * Usage: /api/weather?adm2=64.72
+ * Usage: /api/weather?adm4=64.72.09.1002
  */
 export default async function handler(req, res) {
-  const { adm2 } = req.query;
+  const { adm4 } = req.query;
 
-  if (!adm2) {
+  if (!adm4) {
     return res.status(400).json({
-      error: 'Parameter adm2 diperlukan (kode kabupaten/kota)',
-      example: '/api/weather?adm2=64.72'
+      error: 'Parameter adm4 diperlukan (kode wilayah tingkat kelurahan/desa)',
+      example: '/api/weather?adm4=64.72.09.1002'
     });
   }
 
-  const bmkgUrl = `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm2=${encodeURIComponent(adm2)}`;
+  const bmkgUrl = `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${encodeURIComponent(adm4)}`;
 
   try {
     const controller = new AbortController();
@@ -43,10 +43,10 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
-      console.warn(`[PROXY] Invalid BMKG response format for adm2=${adm2}`);
+      console.warn(`[PROXY] Invalid BMKG response format for adm4=${adm4}`);
       return res.status(502).json({
         error: 'Invalid response format from BMKG',
-        adm2: adm2
+        adm4: adm4
       });
     }
 
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       success: true,
       data: data.data,
       fetched_at: new Date().toISOString(),
-      adm2: adm2
+      adm4: adm4
     });
   } catch (error) {
     if (error.name === 'AbortError') {
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     return res.status(503).json({
       error: 'Service unavailable',
       message: error.message,
-      adm2: adm2
+      adm4: adm4
     });
   }
 }
