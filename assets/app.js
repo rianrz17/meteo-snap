@@ -11,17 +11,17 @@ const REGIONS = [
   {name:"Kutai Barat", lat:-0.4639, lng:115.8336, score:38, risk:"Aman", phenomena:["Cerah Berawan"]},
   {name:"Mahakam Ulu", lat:0.8214, lng:114.9764, score:31, risk:"Aman", phenomena:["Cerah Berawan"]},
 ];
-const BMKG_ADM2 = {
-  "Paser": "64.01",
-  "Kutai Kartanegara": "64.02",
-  "Berau": "64.03",
-  "Kutai Barat": "64.07",
-  "Kutai Timur": "64.08",
-  "Penajam Paser Utara": "64.09",
-  "Mahakam Ulu": "64.12",
-  "Balikpapan": "64.71",
-  "Samarinda": "64.72",
-  "Bontang": "64.74"
+const BMKG_ADM4 = {
+  "Paser": "64.01.04.2005",
+  "Kutai Kartanegara": "64.02.06.1006",
+  "Berau": "64.03.05.1004",
+  "Kutai Barat": "64.07.07.2019",
+  "Kutai Timur": "64.08.04.2012",
+  "Penajam Paser Utara": "64.09.01.1011",
+  "Mahakam Ulu": "64.11.01.2006",
+  "Balikpapan": "64.71.06.1001",
+  "Samarinda": "64.72.09.1002",
+  "Bontang": "64.74.01.1006"
 };
 
 const riskOrder = {"Tinggi":0,"Waspada":1,"Siaga":2,"Aman":3};
@@ -306,8 +306,8 @@ function scoreForRisk(risk){
   return {"Tinggi":90, "Waspada":65, "Siaga":45, "Aman":25}[risk] || 25;
 }
 
-async function fetchBMKGForecast(adm2){
-  const url = `/api/weather?adm2=${adm2}`;
+async function fetchBMKGForecast(adm4){
+  const url = `/api/weather?adm4=${adm4}`;
   const res = await fetch(url);
   if(!res.ok) throw new Error('HTTP ' + res.status);
   const json = await res.json();
@@ -327,7 +327,7 @@ async function loadAllBMKGForecasts(){
   btn.disabled = true;
 
   const results = await Promise.allSettled(
-    REGIONS.map(r => fetchBMKGForecast(BMKG_ADM2[r.name]))
+    REGIONS.map(r => fetchBMKGForecast(BMKG_ADM4[r.name]))
   );
 
   let successCount = 0;
