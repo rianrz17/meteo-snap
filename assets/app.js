@@ -11,18 +11,24 @@ const REGIONS = [
   {name:"Kutai Barat", lat:-0.4639, lng:115.8336, score:38, risk:"Aman", phenomena:["Cerah Berawan"]},
   {name:"Mahakam Ulu", lat:0.8214, lng:114.9764, score:31, risk:"Aman", phenomena:["Cerah Berawan"]},
 ];
-const BMKG_ADM2 = {
-  "Paser": "64.01",
-  "Kutai Kartanegara": "64.02",
-  "Berau": "64.03",
-  "Kutai Barat": "64.07",
-  "Kutai Timur": "64.08",
-  "Penajam Paser Utara": "64.09",
-  "Mahakam Ulu": "64.12",
-  "Balikpapan": "64.71",
-  "Samarinda": "64.72",
-  "Bontang": "64.74"
+const BMKG_ADM4 = {
+  "Kutai Timur": "64.08.01.0001",      // adm4 format
+  "Berau": "64.03.01.0001",
+  "Kutai Kartanegara": "64.02.01.0001",
+  "Samarinda": "64.72.01.0001",
+  "Bontang": "64.74.01.0001",
+  "Balikpapan": "64.71.01.0001",
+  "Penajam Paser Utara": "64.09.01.0001",
+  "Paser": "64.01.01.0001",
+  "Kutai Barat": "64.07.01.0001",
+  "Mahakam Ulu": "64.12.01.0001",
 };
+
+async function fetchBMKGForecast(adm4, retries = 3){
+  // ... existing retry code ...
+  const proxyUrl = `/api/weather?adm4=${encodeURIComponent(adm4)}`;  // ← CHANGE adm2 to adm4
+  // ... rest of code ...
+}
 
 const riskOrder = {"Tinggi":0,"Waspada":1,"Siaga":2,"Aman":3};
 const riskColor = {"Tinggi":"#d64545","Waspada":"#e0873a","Siaga":"#e8c13a","Aman":"#3fa34d"};
