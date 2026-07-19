@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (!adm4) {
     return res.status(400).json({ 
       error: 'Parameter adm4 diperlukan (4-level wilayah code)',
-      example: '/api/weather?adm4=31.71.03.1001'
+      example: '/api/weather?adm4=64.08.01.1001'
     });
   }
 
