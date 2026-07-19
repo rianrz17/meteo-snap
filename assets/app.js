@@ -11,24 +11,18 @@ const REGIONS = [
   {name:"Kutai Barat", lat:-0.4639, lng:115.8336, score:38, risk:"Aman", phenomena:["Cerah Berawan"]},
   {name:"Mahakam Ulu", lat:0.8214, lng:114.9764, score:31, risk:"Aman", phenomena:["Cerah Berawan"]},
 ];
-const BMKG_adm4 = {
-  "Kutai Timur": "64.08.01.0001",      // adm4 format
-  "Berau": "64.03.01.0001",
-  "Kutai Kartanegara": "64.02.01.0001",
-  "Samarinda": "64.72.01.0001",
-  "Bontang": "64.74.01.0001",
-  "Balikpapan": "64.71.01.0001",
-  "Penajam Paser Utara": "64.09.01.0001",
-  "Paser": "64.01.01.0001",
-  "Kutai Barat": "64.07.01.0001",
-  "Mahakam Ulu": "64.12.01.0001",
+const BMKG_ADM2 = {
+  "Paser": "64.01",
+  "Kutai Kartanegara": "64.02",
+  "Berau": "64.03",
+  "Kutai Barat": "64.07",
+  "Kutai Timur": "64.08",
+  "Penajam Paser Utara": "64.09",
+  "Mahakam Ulu": "64.12",
+  "Balikpapan": "64.71",
+  "Samarinda": "64.72",
+  "Bontang": "64.74"
 };
-
-async function fetchBMKGForecast(adm4, retries = 3){
-  // ... existing retry code ...
-  const proxyUrl = `/api/weather?adm4=${encodeURIComponent(adm4)}`;  // ← CHANGE adm2 to adm4
-  // ... rest of code ...
-}
 
 const riskOrder = {"Tinggi":0,"Waspada":1,"Siaga":2,"Aman":3};
 const riskColor = {"Tinggi":"#d64545","Waspada":"#e0873a","Siaga":"#e8c13a","Aman":"#3fa34d"};
@@ -312,126 +306,51 @@ function scoreForRisk(risk){
   return {"Tinggi":90, "Waspada":65, "Siaga":45, "Aman":25}[risk] || 25;
 }
 
-/**
- * Fetch BMKG forecast via Vercel proxy function
- * Mengatasi CORS block dengan menggunakan server-side proxy
- */
-async function fetchBMKGForecast(adm4, retries = 3){
-  let lastError;
-  
-  for (let i = 0; i < retries; i++) {
-    try {
-      // Call ke proxy function (bukan langsung ke BMKG)
-      const proxyUrl = `/api/weather?adm4=${encodeURIComponent(adm4)}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 detik timeout
-      
-      console.log(`[FETCH] Attempt ${i + 1}/${retries}: ${proxyUrl}`);
-      
-      const res = await fetch(proxyUrl, {
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      
-      const json = await res.json();
-      
-      // Validasi response dari proxy
-      if (!json.data || !Array.isArray(json.data) || !json.data[0]) {
-        throw new Error('Invalid proxy response format');
-      }
-      
-      const item = json.data[0];
-      if (!item.cuaca || !item.cuaca[0] || !item.cuaca[0][0]) {
-        throw new Error('Forecast data tidak tersedia');
-      }
-      
-      console.log(`[FETCH] Success for adm4=${adm4}`);
-      return item.cuaca[0][0]; // Return forecast entry
-      
-    } catch (error) {
-      lastError = error;
-      
-      if (error.name === 'AbortError') {
-        console.warn(`[FETCH] Timeout for adm4=${adm4} (attempt ${i + 1})`);
-      } else {
-        console.warn(`[FETCH] Error for adm4=${adm4}: ${error.message} (attempt ${i + 1})`);
-      }
-      
-      // Tunggu sebelum retry (exponential backoff)
-      if (i < retries - 1) {
-        const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
-        console.log(`[FETCH] Retry dalam ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
+async function fetchBMKGForecast(adm2){
+  const url = `/api/weather?adm2=${adm2}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const json = await res.json();
+  const item = json.data && json.data[0];
+  if(!item || !item.cuaca || !item.cuaca[0] || !item.cuaca[0][0]){
+    throw new Error('Format data tidak sesuai');
   }
-  
-  // Semua retry gagal
-  throw new Error(`Failed after ${retries} attempts: ${lastError?.message || 'Unknown error'}`);
+  // Ambil entri prakiraan terdekat (jam pertama pada hari pertama)
+  return item.cuaca[0][0];
 }
 
 let bmkgLoaded = false;
 async function loadAllBMKGForecasts(){
   const statusEl = document.getElementById('bmkgStatusLine');
   const btn = document.getElementById('bmkgRefreshBtn');
-  
-  statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memuat data prakiraan via proxy server...';
+  statusEl.textContent = 'Memuat data prakiraan dari data.bmkg.go.id ...';
   btn.disabled = true;
 
-  const startTime = Date.now();
-  
-  console.log('[LOAD] Starting BMKG forecast load for', REGIONS.length, 'regions');
-
   const results = await Promise.allSettled(
-    REGIONS.map(r => fetchBMKGForecast(BMKG_adm4[r.name]))
+    REGIONS.map(r => fetchBMKGForecast(BMKG_ADM2[r.name]))
   );
 
   let successCount = 0;
-  let failedRegions = [];
-  
   results.forEach((res, i)=>{
     if(res.status === 'fulfilled'){
-      try {
-        const c = classifyFromBMKG(res.value);
-        REGIONS[i].risk = c.risk;
-        REGIONS[i].score = scoreForRisk(c.risk);
-        REGIONS[i].phenomena = c.phenomena;
-        REGIONS[i].bmkg = c;
-        successCount++;
-      } catch (e) {
-        console.error(`[LOAD] Failed to classify region ${i}:`, e.message);
-        REGIONS[i].bmkg = null;
-        failedRegions.push(REGIONS[i].name);
-      }
+      const c = classifyFromBMKG(res.value);
+      REGIONS[i].risk = c.risk;
+      REGIONS[i].score = scoreForRisk(c.risk);
+      REGIONS[i].phenomena = c.phenomena;
+      REGIONS[i].bmkg = c;
+      successCount++;
     } else {
-      console.error(`[LOAD] Fetch failed for ${REGIONS[i].name}:`, res.reason?.message);
       REGIONS[i].bmkg = null;
-      failedRegions.push(REGIONS[i].name);
     }
   });
 
-  const duration = ((Date.now() - startTime) / 1000).toFixed(1);
   bmkgLoaded = successCount > 0;
-  
-  // Set status message
   if(successCount === REGIONS.length){
-    statusEl.innerHTML = `<i class="fa-solid fa-check" style="color:green;"></i> Data prakiraan BMKG berhasil dimuat untuk ${successCount} wilayah (${duration}s). Update: ${new Date().toLocaleTimeString('id-ID')} WITA.`;
-    console.log('[LOAD] All regions loaded successfully');
+    statusEl.textContent = `Data prakiraan BMKG berhasil dimuat untuk ${successCount} wilayah. Update: ${new Date().toLocaleTimeString('id-ID')} WITA.`;
   } else if(successCount > 0){
-    statusEl.innerHTML = `<i class="fa-solid fa-exclamation-triangle" style="color:orange;"></i> Berhasil memuat ${successCount}/${REGIONS.length} wilayah (${duration}s). Gagal: ${failedRegions.join(', ')}. Sisanya memakai data dummy.`;
-    console.warn('[LOAD] Partial load:', failedRegions);
+    statusEl.textContent = `Berhasil memuat ${successCount} dari ${REGIONS.length} wilayah. Sisanya memakai data dummy (kemungkinan koneksi/CORS ke API BMKG terbatas).`;
   } else {
-    statusEl.innerHTML = `<i class="fa-solid fa-times" style="color:red;"></i> Tidak dapat mengambil data BMKG. Proxy server atau BMKG API mungkin tidak tersedia. Dashboard tetap menampilkan data dummy.`;
-    console.error('[LOAD] Complete failure - using dummy data');
+    statusEl.textContent = 'Tidak dapat mengambil data BMKG saat ini (kemungkinan browser memblokir permintaan lintas domain/CORS). Dashboard tetap menampilkan data dummy sebagai fallback.';
   }
 
   renderBmkgForecastGrid();
