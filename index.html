@@ -11,6 +11,17 @@
 </head>
 <body>
 
+<!-- Login Peran (simulasi Sprint 3 - tanpa backend, murni pemilihan tampilan) -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-box">
+    <img src="assets/logo-bmkg.png" alt="Logo BMKG" style="width:56px;height:56px;object-fit:contain;">
+    <h4 class="brand-font" style="margin:10px 0 2px;">METEO SNAP <span style="font-size:.8rem; font-weight:400;">v1.0</span></h4>
+    <div style="font-size:.75rem; color:var(--ink-soft); margin-bottom:18px;">Pilih peran untuk masuk ke dashboard</div>
+    <div id="loginRoleGrid" class="login-role-grid"></div>
+    <div style="font-size:.65rem; color:var(--ink-soft); margin-top:16px;">*Simulasi tampilan peran untuk keperluan demo/prototipe — bukan autentikasi sungguhan.</div>
+  </div>
+</div>
+
 <div class="header-bar">
   <div class="header-inner">
     <div class="brand-row">
@@ -23,6 +34,8 @@
       </div>
     </div>
     <div class="header-actions">
+      <div class="role-badge" id="roleBadge" style="display:none;"></div>
+      <button class="theme-toggle" id="switchRoleBtn"><i class="fa-solid fa-right-left"></i><span>Ganti Peran</span></button>
       <button class="theme-toggle" id="themeToggle"><i class="fa-solid fa-moon"></i><span>Dark Mode</span></button>
     </div>
   </div>
@@ -45,6 +58,16 @@
       <div class="summary-icon icon-update"><i class="fa-regular fa-clock"></i></div>
       <div><div class="label">Update Terakhir</div><div class="value" id="lastUpdate">-</div><div class="priority-sub" id="periodeValue">Memuat...</div></div>
     </div>
+  </div>
+
+  <!-- Panel Fokus Peran (Sprint 3) -->
+  <div id="roleFocusPanel" class="role-focus-panel" style="display:none;"></div>
+
+  <!-- Peringatan Dini Resmi BMKG -->
+  <div class="card-panel" id="officialWarningCard" style="margin-bottom:18px; display:none;">
+    <div class="section-label">Peringatan Dini Cuaca BMKG (Resmi - CAP)</div>
+    <div id="officialWarningList"></div>
+    <div style="font-size:.68rem; color:var(--ink-soft); margin-top:10px;">Sumber: Peringatan Dini Cuaca (Nowcast) BMKG, berbasis Common Alerting Protocol (CAP).</div>
   </div>
 
   <!-- BMKG Live Forecast -->
