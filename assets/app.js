@@ -35,7 +35,6 @@ const ROLE_FOCUS = {
   "Pemda": {phenomena:[], label:"Koordinasi Lintas OPD"},
   "Media": {phenomena:[], label:"Diseminasi Informasi Publik"},
   "PLN": {phenomena:["Angin Kencang","Hujan Petir"], label:"Keandalan Jaringan Listrik"},
-  "BMKG Internal": {phenomena:[], label:"Tampilan Umum (Semua Data)"},
 };
 
 const STAKEHOLDERS = [
@@ -587,7 +586,6 @@ initDashboard();
 
 // ---------- Sprint 3: Login Peran & Panel Fokus ----------
 const LOGIN_ROLES = [
-  ...STAKEHOLDERS,
   {name:"BMKG Internal", icon:"fa-solid fa-satellite-dish"},
 ];
 
