@@ -89,6 +89,9 @@ body{
 .summary-card .label{font-size:.72rem; text-transform:uppercase; letter-spacing:1px; color:var(--ink-soft); margin-bottom:2px;}
 .summary-card .value{font-size:1.05rem; font-weight:700;}
 .summary-card .value.status-waspada{color:var(--risk-waspada);}
+.summary-card .value.status-tinggi{color:var(--risk-tinggi);}
+.summary-card .value.status-siaga{color:var(--risk-siaga);}
+.summary-card .value.status-aman{color:var(--risk-aman);}
 
 /* Main grid: priority + map */
 .main-grid{display:grid; grid-template-columns:1fr 1.35fr; gap:18px; margin-bottom:18px;}
