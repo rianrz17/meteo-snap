@@ -28,6 +28,16 @@ const riskOrder = {"Tinggi":0,"Waspada":1,"Siaga":2,"Aman":3};
 const riskColor = {"Tinggi":"#d64545","Waspada":"#e0873a","Siaga":"#e8c13a","Aman":"#3fa34d"};
 const pillClass = {"Tinggi":"pill-tinggi","Waspada":"pill-waspada","Siaga":"pill-siaga","Aman":"pill-aman"};
 
+const ROLE_FOCUS = {
+  "BPBD": {phenomena:["Hujan Lebat","Hujan Sedang","Hujan Petir"], label:"Kebencanaan & Evakuasi"},
+  "Bandara APT Pranoto": {phenomena:["Angin Kencang","Jarak Pandang Terbatas","Hujan Petir"], label:"Keselamatan Penerbangan"},
+  "KSOP": {phenomena:["Angin Kencang","Hujan Lebat","Hujan Petir"], label:"Keselamatan Pelayaran Sungai Mahakam"},
+  "Pemda": {phenomena:[], label:"Koordinasi Lintas OPD"},
+  "Media": {phenomena:[], label:"Diseminasi Informasi Publik"},
+  "PLN": {phenomena:["Angin Kencang","Hujan Petir"], label:"Keandalan Jaringan Listrik"},
+  "BMKG Internal": {phenomena:[], label:"Tampilan Umum (Semua Data)"},
+};
+
 const STAKEHOLDERS = [
   {name:"BPBD", icon:"fa-solid fa-house-flag"},
   {name:"Bandara APT Pranoto", icon:"fa-solid fa-plane"},
@@ -120,6 +130,7 @@ function renderImpact(){
 }
 
 function topRiskOverall(){
+  if(officialWarnings && officialWarnings.length > 0) return 'Tinggi';
   const sorted = [...REGIONS].sort((a,b)=> riskOrder[a.risk]-riskOrder[b.risk]);
   return sorted[0].risk;
 }
@@ -359,25 +370,76 @@ async function fetchBMKGForecast(adm4){
   if(!item || !item.cuaca || !item.cuaca[0] || !item.cuaca[0][0]){
     throw new Error('Format data tidak sesuai');
   }
-  // Ambil entri prakiraan terdekat (jam pertama pada hari pertama)
-  return item.cuaca[0][0];
+  // Ambil seluruh entri prakiraan untuk hari ini (biasanya per 3 jam),
+  // supaya IBF mencerminkan potensi terburuk sepanjang hari, bukan cuma jam pertama.
+  return item.cuaca[0];
+}
+
+function classifyDayFromBMKG(dayEntries){
+  const classifications = dayEntries.map(classifyFromBMKG);
+  // Ambil klasifikasi dengan level risiko tertinggi sepanjang hari (pendekatan Impact-Based Forecast)
+  const worst = classifications.reduce((acc, c) =>
+    riskOrder[c.risk] < riskOrder[acc.risk] ? c : acc, classifications[0]);
+  const allPhenomena = [...new Set(classifications.flatMap(c => c.phenomena))];
+  const nearest = dayEntries[0]; // representasi kondisi terdekat untuk ditampilkan di kartu
+  return {
+    risk: worst.risk,
+    phenomena: allPhenomena,
+    temp: nearest.t,
+    humidity: nearest.hu,
+    wind: nearest.ws,
+    desc: nearest.weather_desc,
+    image: nearest.image,
+    local_datetime: nearest.local_datetime
+  };
 }
 
 let bmkgLoaded = false;
+let officialWarnings = [];
+
+async function loadOfficialWarnings(){
+  const card = document.getElementById('officialWarningCard');
+  const list = document.getElementById('officialWarningList');
+  try{
+    const res = await fetch('/api/warning');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    officialWarnings = json.items || [];
+  }catch(e){
+    console.error('Gagal memuat peringatan dini BMKG', e);
+    officialWarnings = [];
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  if(officialWarnings.length === 0){
+    list.innerHTML = `<div class="warning-empty"><i class="fa-solid fa-circle-check"></i> Tidak ada peringatan dini resmi BMKG yang aktif untuk Kalimantan Timur saat ini.</div>`;
+  } else {
+    list.innerHTML = officialWarnings.map(w => `
+      <div class="warning-item">
+        <div class="w-title"><i class="fa-solid fa-triangle-exclamation"></i> ${w.title}</div>
+        <div class="w-desc">${w.description}</div>
+        <div class="w-meta">Dipublikasikan: ${w.pubDate} &middot; <a href="${w.link}" target="_blank" rel="noopener">Detail CAP</a></div>
+      </div>`).join('');
+  }
+}
+
 async function loadAllBMKGForecasts(){
   const statusEl = document.getElementById('bmkgStatusLine');
   const btn = document.getElementById('bmkgRefreshBtn');
   statusEl.textContent = 'Memuat data prakiraan dari data.bmkg.go.id ...';
   btn.disabled = true;
 
-  const results = await Promise.allSettled(
-    REGIONS.map(r => fetchBMKGForecast(BMKG_ADM4[r.name]))
-  );
+  const [results] = await Promise.all([
+    Promise.allSettled(REGIONS.map(r => fetchBMKGForecast(BMKG_ADM4[r.name]))),
+    loadOfficialWarnings()
+  ]);
 
   let successCount = 0;
   results.forEach((res, i)=>{
     if(res.status === 'fulfilled'){
-      const c = classifyFromBMKG(res.value);
+      const c = classifyDayFromBMKG(res.value);
       REGIONS[i].risk = c.risk;
       REGIONS[i].score = scoreForRisk(c.risk);
       REGIONS[i].phenomena = c.phenomena;
@@ -399,6 +461,7 @@ async function loadAllBMKGForecasts(){
 
   renderBmkgForecastGrid();
   renderSummaryCards();
+  if(typeof renderRoleFocusPanel === 'function' && currentRole) renderRoleFocusPanel();
   renderPriority();
   renderImpact();
   renderStakeholders();
@@ -521,3 +584,78 @@ async function initDashboard(){
 }
 
 initDashboard();
+
+// ---------- Sprint 3: Login Peran & Panel Fokus ----------
+const LOGIN_ROLES = [
+  ...STAKEHOLDERS,
+  {name:"BMKG Internal", icon:"fa-solid fa-satellite-dish"},
+];
+
+let currentRole = null;
+
+function renderLoginRoles(){
+  const grid = document.getElementById('loginRoleGrid');
+  grid.innerHTML = LOGIN_ROLES.map(r=>`
+    <div class="login-role-btn" data-role="${r.name}">
+      <i class="${r.icon}"></i>
+      <span>${r.name}</span>
+    </div>`).join('');
+  grid.querySelectorAll('.login-role-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> selectRole(btn.getAttribute('data-role')));
+  });
+}
+
+function selectRole(roleName){
+  currentRole = roleName;
+  try{ sessionStorage.setItem('meteoSnapRole', roleName); }catch(e){}
+  document.getElementById('loginOverlay').style.display = 'none';
+  const badge = document.getElementById('roleBadge');
+  const roleObj = LOGIN_ROLES.find(r=>r.name===roleName);
+  badge.style.display = 'flex';
+  badge.innerHTML = `<i class="${roleObj.icon}"></i> ${roleName}`;
+  renderRoleFocusPanel();
+}
+
+function renderRoleFocusPanel(){
+  const panel = document.getElementById('roleFocusPanel');
+  if(!currentRole || currentRole === 'BMKG Internal'){
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  const cfg = ROLE_FOCUS[currentRole];
+  const topRisk = topRiskOverall();
+  const stakeholderObj = STAKEHOLDERS.find(s=>s.name===currentRole);
+  const actions = decisionActions(stakeholderObj, topRisk);
+
+  // Wilayah paling relevan buat peran ini: yang fenomenanya beririsan dengan fokus peran,
+  // diurutkan berdasarkan skor risiko. Kalau tidak ada fokus spesifik, tampilkan top 5 umum.
+  let relevant = REGIONS.filter(r => (r.phenomena || []).some(p => cfg.phenomena.includes(p)));
+  if(relevant.length === 0) relevant = [...REGIONS];
+  relevant = relevant.sort((a,b)=> b.score - a.score).slice(0,5);
+
+  panel.innerHTML = `
+    <div class="rf-title">Dashboard ${currentRole}</div>
+    <h4><i class="${stakeholderObj.icon}"></i> Fokus: ${cfg.label}</h4>
+    <div class="role-focus-grid">
+      <div class="rf-actions">
+        <b style="font-size:.82rem;">Rekomendasi Aksi Saat Ini (${topRisk})</b>
+        <ul>${actions.map(a=>`<li>${a}</li>`).join('')}</ul>
+      </div>
+      <div class="rf-regions">
+        <b style="font-size:.82rem;">Wilayah Paling Relevan untuk ${currentRole}</b>
+        ${relevant.map(r=>`<div class="rf-region-item"><span>${r.name}</span><span>${r.risk}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+document.getElementById('switchRoleBtn').addEventListener('click', ()=>{
+  document.getElementById('loginOverlay').style.display = 'flex';
+});
+
+renderLoginRoles();
+try{
+  const savedRole = sessionStorage.getItem('meteoSnapRole');
+  if(savedRole){ selectRole(savedRole); }
+}catch(e){}
