@@ -37,17 +37,52 @@ const STAKEHOLDERS = [
   {name:"PLN", icon:"fa-solid fa-bolt"},
 ];
 
-// simple decision-engine rules keyed by top risk level present
+// Aturan rekomendasi rule-based per level risiko — tiap instansi punya beberapa aksi konkret
+const DECISION_RULES = {
+  "BPBD": {
+    "Tinggi": ["Aktifkan status Siaga Darurat Bencana", "Kerahkan tim reaksi cepat & buka posko utama", "Siapkan jalur evakuasi & logistik pengungsian"],
+    "Waspada": ["Tingkatkan piket pemantauan 24 jam", "Koordinasi dengan camat/lurah di wilayah terdampak", "Siagakan personel & peralatan siaga bencana"],
+    "Siaga": ["Pemantauan berkala kondisi lapangan", "Perbarui data kontak & titik rawan bencana"],
+    "Aman": ["Kegiatan operasional berjalan normal", "Lanjutkan pemantauan rutin mingguan"],
+  },
+  "Bandara APT Pranoto": {
+    "Tinggi": ["Monitoring intensif pertumbuhan awan Cumulonimbus (CB)", "Terbitkan/perbarui NOTAM bila diperlukan", "Koordinasi dengan AirNav terkait potensi delay/diversion"],
+    "Waspada": ["Monitoring perkembangan awan CB di sekitar bandara", "Informasikan kondisi cuaca ke maskapai secara berkala"],
+    "Siaga": ["Pemantauan cuaca rutin di runway & jalur approach", "Pembaruan METAR/TAFOR berkala"],
+    "Aman": ["Operasional penerbangan berjalan normal", "Pengamatan cuaca rutin sesuai jadwal"],
+  },
+  "KSOP": {
+    "Tinggi": ["Terbitkan peringatan tinggi gelombang ke pelayaran", "Tunda keberangkatan kapal kecil/rakyat", "Koordinasi dengan Basarnas & Syahbandar setempat"],
+    "Waspada": ["Peringatan dini kepada operator pelayaran", "Perketat pengawasan kelaikan kapal sebelum berlayar"],
+    "Siaga": ["Pemantauan rutin jalur pelayaran Sungai Mahakam"],
+    "Aman": ["Pelayaran & bongkar muat berjalan normal"],
+  },
+  "Pemda": {
+    "Tinggi": ["Aktifkan status siaga darurat daerah", "Siapkan anggaran tak terduga & posko bantuan", "Koordinasi lintas OPD & kecamatan terdampak"],
+    "Waspada": ["Rapat koordinasi lintas OPD terkait", "Siapkan kesiapsiagaan logistik kecamatan"],
+    "Siaga": ["Pemantauan berkala melalui camat/lurah"],
+    "Aman": ["Kondisi normal, layanan pemerintahan berjalan seperti biasa"],
+  },
+  "Media": {
+    "Tinggi": ["Sebarluaskan peringatan dini ke publik secepatnya", "Siapkan liputan lapangan di titik rawan", "Update berkala mengikuti perkembangan status"],
+    "Waspada": ["Publikasikan imbauan kewaspadaan cuaca", "Sosialisasikan jalur & titik rawan ke warga"],
+    "Siaga": ["Informasi cuaca rutin ke publik"],
+    "Aman": ["Info kondisi cuaca normal ke publik"],
+  },
+  "PLN": {
+    "Tinggi": ["Siagakan tim reaksi cepat gangguan jaringan", "Antisipasi pohon tumbang & gangguan kabel", "Siapkan genset cadangan di lokasi kritis"],
+    "Waspada": ["Siaga gangguan jaringan akibat angin/hujan", "Patroli jaringan di titik rawan"],
+    "Siaga": ["Pemantauan rutin jaringan distribusi"],
+    "Aman": ["Operasional distribusi listrik berjalan normal"],
+  },
+};
+
+function decisionActions(stakeholder, topRisk){
+  return DECISION_RULES[stakeholder.name][topRisk];
+}
+// Versi ringkas (aksi prioritas pertama) — dipakai di konteks yang butuh satu baris (mis. WhatsApp Brief)
 function decisionFor(stakeholder, topRisk){
-  const rules = {
-    "BPBD": {"Tinggi":"SIAGA — Standby personel &amp; peralatan evakuasi","Waspada":"Pemantauan aktif &amp; koordinasi posko","Siaga":"Pemantauan rutin","Aman":"Kondisi normal"},
-    "Bandara APT Pranoto": {"Tinggi":"Monitoring intensif awan CB, waspada delay","Waspada":"Monitoring CB","Siaga":"Pemantauan rutin","Aman":"Operasional normal"},
-    "KSOP": {"Tinggi":"Warning kapal &amp; tunda pelayaran kecil","Waspada":"Peringatan dini pelayaran","Siaga":"Pemantauan rutin","Aman":"Pelayaran normal"},
-    "Pemda": {"Tinggi":"Siaga darurat &amp; siapkan posko bantuan","Waspada":"Koordinasi lintas OPD","Siaga":"Pemantauan berkala","Aman":"Kondisi normal"},
-    "Media": {"Tinggi":"Sebarkan peringatan dini ke publik","Waspada":"Publikasi imbauan cuaca","Siaga":"Info rutin","Aman":"Info kondisi normal"},
-    "PLN": {"Tinggi":"Siaga gangguan &amp; tim reaksi cepat","Waspada":"Siaga gangguan jaringan","Siaga":"Pemantauan rutin","Aman":"Operasional normal"},
-  };
-  return rules[stakeholder.name][topRisk];
+  return decisionActions(stakeholder, topRisk)[0];
 }
 
 function renderPriority(){
@@ -91,11 +126,18 @@ function topRiskOverall(){
 
 function renderStakeholders(){
   const topRisk = topRiskOverall();
-  document.getElementById('stakeholderList').innerHTML = STAKEHOLDERS.map(s=>`
+  document.getElementById('stakeholderList').innerHTML = STAKEHOLDERS.map(s=>{
+    const actions = decisionActions(s, topRisk);
+    const actionList = actions.map(a=>`<li>${a}</li>`).join('');
+    return `
     <div class="stakeholder-row">
       <div class="stakeholder-icon"><i class="${s.icon}"></i></div>
-      <div><div class="stakeholder-name">${s.name}</div><div class="stakeholder-action">${decisionFor(s, topRisk)}</div></div>
-    </div>`).join('');
+      <div>
+        <div class="stakeholder-name">${s.name}</div>
+        <ul class="stakeholder-action-list">${actionList}</ul>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 let map;
@@ -164,7 +206,7 @@ function buildExecHtml(){
   <b>Ranking Wilayah:</b>
   <ol>${sorted.map(r=>`<li>${r.name} — <span class="risk-pill ${pillClass[r.risk]}" style="display:inline-block;">${r.risk}</span></li>`).join('')}</ol>
   <b>Rekomendasi Instansi:</b>
-  <ul>${STAKEHOLDERS.map(s=>`<li><b>${s.name}:</b> ${decisionFor(s, topRisk)}</li>`).join('')}</ul>
+  <ul>${STAKEHOLDERS.map(s=>`<li><b>${s.name}:</b><ul>${decisionActions(s, topRisk).map(a=>`<li>${a}</li>`).join('')}</ul></li>`).join('')}</ul>
   `;
 }
 
@@ -216,9 +258,9 @@ function renderEngineOutput(regionName, risk){
     </div>` +
     STAKEHOLDERS.map(s=>`
       <div class="col-md-4">
-        <div class="impact-mini" style="margin-bottom:0;">
-          <i class="${s.icon}"></i>
-          <div><div class="lbl">${s.name}</div><div class="region">${decisionFor(s, risk)}</div></div>
+        <div class="impact-mini" style="align-items:flex-start; margin-bottom:0;">
+          <i class="${s.icon}" style="margin-top:2px;"></i>
+          <div><div class="lbl">${s.name}</div><ul class="stakeholder-action-list">${decisionActions(s, risk).map(a=>`<li>${a}</li>`).join('')}</ul></div>
         </div>
       </div>`).join('');
 }
