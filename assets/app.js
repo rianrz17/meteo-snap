@@ -356,6 +356,7 @@ async function loadAllBMKGForecasts(){
   }
 
   renderBmkgForecastGrid();
+  renderSummaryCards();
   renderPriority();
   renderImpact();
   renderStakeholders();
@@ -368,6 +369,39 @@ async function loadAllBMKGForecasts(){
   renderEngineOutput(document.getElementById('engineRegion').value || REGIONS[0].name, document.getElementById('engineRisk').value || REGIONS[0].risk);
 
   btn.disabled = false;
+}
+
+const statusEmoji = {"Tinggi":"🔴", "Waspada":"🟠", "Siaga":"🟡", "Aman":"🟢"};
+
+function renderSummaryCards(){
+  const topRisk = topRiskOverall();
+  const statusEl = document.getElementById('statusValue');
+  statusEl.textContent = `${statusEmoji[topRisk]} ${topRisk.toUpperCase()}`;
+  statusEl.className = 'value status-' + topRisk.toLowerCase();
+
+  const iconEl = document.getElementById('statusIcon');
+  iconEl.style.background = riskColor[topRisk];
+  iconEl.innerHTML = topRisk === 'Aman'
+    ? '<i class="fa-solid fa-circle-check"></i>'
+    : '<i class="fa-solid fa-triangle-exclamation"></i>';
+
+  // Fenomena dominan: kumpulkan semua fenomena unik dari wilayah berisiko tertinggi ke bawah
+  const sorted = [...REGIONS].sort((a,b)=> b.score - a.score);
+  const allPhenomena = [];
+  sorted.forEach(r=>{
+    (r.phenomena || []).forEach(p=>{
+      if(!allPhenomena.includes(p) && p !== 'Cerah' && p !== 'Berawan' && p !== 'Cerah Berawan'){
+        allPhenomena.push(p);
+      }
+    });
+  });
+  document.getElementById('fenomenaValue').textContent = allPhenomena.length ? allPhenomena.slice(0,3).join(' & ') : 'Cerah Berawan';
+
+  const now = new Date();
+  const jam = String(now.getHours()).padStart(2,'0') + '.' + String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('lastUpdate').textContent = jam + ' WITA';
+  const tglOpts = { day:'numeric', month:'short', year:'numeric' };
+  document.getElementById('periodeValue').textContent = 'Periode potensi: ' + now.toLocaleDateString('id-ID', tglOpts);
 }
 
 function renderBmkgForecastGrid(){
