@@ -223,3 +223,55 @@ body{
 
 footer{text-align:center; padding:20px; font-size:.72rem; color:var(--ink-soft);}
 .modal-content{border-radius:16px;}
+
+/* Sprint 3: Login Peran & Panel Fokus */
+.login-overlay{
+  position:fixed; inset:0; z-index:3000;
+  background:linear-gradient(135deg, var(--bmkg-navy), var(--bmkg-blue) 55%, var(--bmkg-sky));
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.login-box{
+  background:var(--surface); border-radius:20px; padding:32px 28px; max-width:520px; width:100%;
+  text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.35);
+}
+.login-role-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+@media(max-width:480px){.login-role-grid{grid-template-columns:repeat(2,1fr);}}
+.login-role-btn{
+  border:1px solid var(--line); background:var(--bg); border-radius:12px; padding:14px 8px;
+  cursor:pointer; transition:all .2s ease; color:var(--ink);
+}
+.login-role-btn:hover{border-color:var(--bmkg-sky); background:rgba(43,143,214,.08); transform:translateY(-2px);}
+.login-role-btn i{font-size:1.4rem; display:block; margin-bottom:6px; color:var(--bmkg-blue);}
+.login-role-btn span{font-size:.72rem; font-weight:600; display:block;}
+
+.role-badge{
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.35); color:#fff;
+  border-radius:20px; padding:6px 14px; font-size:.78rem; font-weight:600;
+  display:flex; align-items:center; gap:6px;
+}
+
+.role-focus-panel{
+  border-radius:var(--radius); padding:20px; margin-bottom:18px; color:#fff;
+  background:linear-gradient(120deg, var(--bmkg-navy), var(--bmkg-blue));
+}
+.role-focus-panel .rf-title{font-size:.72rem; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; opacity:.85; margin-bottom:4px;}
+.role-focus-panel h4{margin:0 0 12px; font-weight:700;}
+.role-focus-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media(max-width:768px){.role-focus-grid{grid-template-columns:1fr;}}
+.role-focus-panel .rf-actions{background:rgba(255,255,255,.1); border-radius:10px; padding:12px 14px;}
+.role-focus-panel .rf-actions ul{margin:6px 0 0; padding-left:18px; font-size:.82rem;}
+.role-focus-panel .rf-regions{background:rgba(255,255,255,.1); border-radius:10px; padding:12px 14px;}
+.role-focus-panel .rf-region-item{display:flex; justify-content:space-between; font-size:.82rem; padding:4px 0; border-bottom:1px solid rgba(255,255,255,.15);}
+.role-focus-panel .rf-region-item:last-child{border-bottom:none;}
+
+/* Peringatan Dini Resmi BMKG */
+#officialWarningCard{border-left:4px solid var(--risk-tinggi);}
+.warning-item{
+  background:rgba(214,69,69,.08); border:1px solid rgba(214,69,69,.25); border-radius:10px;
+  padding:12px 14px; margin-bottom:10px;
+}
+.warning-item:last-child{margin-bottom:0;}
+.warning-item .w-title{font-weight:700; font-size:.86rem; color:var(--risk-tinggi); display:flex; align-items:center; gap:6px;}
+.warning-item .w-desc{font-size:.78rem; color:var(--ink-soft); margin-top:4px; white-space:pre-line;}
+.warning-item .w-meta{font-size:.68rem; color:var(--ink-soft); margin-top:6px;}
+.warning-empty{font-size:.82rem; color:var(--risk-aman); display:flex; align-items:center; gap:8px;}
