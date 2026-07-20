@@ -288,7 +288,7 @@ function classifyFromBMKG(entry){
   } else if(desc.includes('hujan sedang') || (tp >= 10 && tp < 20)){
     risk = 'Waspada'; phenomena.push('Hujan Sedang');
   } else if(desc.includes('kabur') || desc.includes('kabut') || desc.includes('asap')){
-    risk = 'Siaga'; phenomena.push('Jarak Pandang Terbatas');
+    risk = 'Aman'; phenomena.push('Jarak Pandang Terbatas');
   } else if(desc.includes('hujan ringan') || (tp >= 1 && tp < 10)){
     risk = 'Aman'; phenomena.push('Hujan Ringan');
   } else {
