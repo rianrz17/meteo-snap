@@ -51,13 +51,19 @@
   <div class="card-panel" style="margin-bottom:18px;">
     <div class="section-label" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
       <span>Prakiraan Cuaca BMKG (Real-time) - 10 Wilayah Kaltim</span>
-      <button class="btn btn-sm" id="bmkgRefreshBtn" style="background:var(--bmkg-navy); color:#fff; font-size:.7rem;">
-        <i class="fa-solid fa-rotate"></i> Perbarui
-      </button>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="form-check form-switch" style="margin:0;">
+          <input class="form-check-input" type="checkbox" role="switch" id="autoRefreshToggle" checked>
+          <label class="form-check-label" for="autoRefreshToggle" style="font-size:.7rem; color:var(--ink-soft);">Auto-refresh 10 menit</label>
+        </div>
+        <button class="btn btn-sm" id="bmkgRefreshBtn" style="background:var(--bmkg-navy); color:#fff; font-size:.7rem;">
+          <i class="fa-solid fa-rotate"></i> Perbarui
+        </button>
+      </div>
     </div>
     <div id="bmkgStatusLine" style="font-size:.75rem; color:var(--ink-soft); margin-bottom:10px;">Memuat data prakiraan dari data.bmkg.go.id ...</div>
     <div id="bmkgForecastGrid" class="row g-2"></div>
-    <div style="font-size:.68rem; color:var(--ink-soft); margin-top:10px;">Sumber: Data Prakiraan Cuaca Terbuka BMKG (data.bmkg.go.id) - parameter wilayah (adm2) per kabupaten/kota.</div>
+    <div style="font-size:.68rem; color:var(--ink-soft); margin-top:10px;">Sumber: Data Prakiraan Cuaca Terbuka BMKG (data.bmkg.go.id) - parameter wilayah (adm4) per kelurahan/desa representatif.</div>
   </div>
 
   <!-- Priority + Map -->
