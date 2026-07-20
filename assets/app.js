@@ -277,18 +277,20 @@ function classifyFromBMKG(entry){
   // entry: single forecast object from BMKG cuaca array (t, tp, ws, weather_desc, ...)
   const desc = (entry.weather_desc || '').toLowerCase();
   const ws = entry.ws || 0;   // wind speed km/h
-  const tp = entry.tp || 0;   // precipitation mm
+  const tp = entry.tp || 0;   // precipitation mm (akumulasi periode prakiraan)
   const phenomena = [];
   let risk = 'Aman';
 
-  if(desc.includes('petir') || tp >= 20){
-    risk = 'Tinggi'; phenomena.push('Hujan Lebat', 'Petir');
-  } else if(desc.includes('hujan lebat') || tp >= 10){
+  if(desc.includes('petir')){
+    risk = 'Tinggi'; phenomena.push('Hujan Petir');
+  } else if(desc.includes('hujan lebat') || tp >= 20){
     risk = 'Tinggi'; phenomena.push('Hujan Lebat');
-  } else if(desc.includes('hujan sedang') || tp >= 5){
+  } else if(desc.includes('hujan sedang') || (tp >= 10 && tp < 20)){
     risk = 'Waspada'; phenomena.push('Hujan Sedang');
-  } else if(desc.includes('hujan ringan') || tp > 0){
-    risk = 'Siaga'; phenomena.push('Hujan Ringan');
+  } else if(desc.includes('kabur') || desc.includes('kabut') || desc.includes('asap')){
+    risk = 'Siaga'; phenomena.push('Jarak Pandang Terbatas');
+  } else if(desc.includes('hujan ringan') || (tp >= 1 && tp < 10)){
+    risk = 'Aman'; phenomena.push('Hujan Ringan');
   } else {
     risk = 'Aman'; phenomena.push(entry.weather_desc || 'Cerah Berawan');
   }
@@ -296,7 +298,7 @@ function classifyFromBMKG(entry){
   if(ws >= 30){
     risk = 'Tinggi'; phenomena.push('Angin Kencang');
   } else if(ws >= 20){
-    if(risk === 'Aman' || risk === 'Siaga') risk = 'Waspada';
+    if(riskOrder[risk] > riskOrder['Waspada']) risk = 'Waspada';
     phenomena.push('Angin Kencang');
   }
   return {risk, phenomena: [...new Set(phenomena)], temp: entry.t, humidity: entry.hu, wind: ws, desc: entry.weather_desc, image: entry.image, local_datetime: entry.local_datetime};
