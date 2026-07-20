@@ -399,6 +399,27 @@ function renderBmkgForecastGrid(){
 
 document.getElementById('bmkgRefreshBtn').addEventListener('click', loadAllBMKGForecasts);
 
+const AUTO_REFRESH_MS = 10 * 60 * 1000; // 10 menit
+let autoRefreshTimer = null;
+
+function startAutoRefresh(){
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(loadAllBMKGForecasts, AUTO_REFRESH_MS);
+}
+function stopAutoRefresh(){
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = null;
+}
+document.getElementById('autoRefreshToggle').addEventListener('change', function(){
+  if(this.checked){ startAutoRefresh(); } else { stopAutoRefresh(); }
+});
+// Muat ulang otomatis begitu tab kembali aktif setelah lama tidak dilihat (mis. dibuka semalaman)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && document.getElementById('autoRefreshToggle').checked){
+    loadAllBMKGForecasts();
+  }
+});
+
 let KALTIM_GEOJSON = null;
 
 async function initDashboard(){
@@ -418,6 +439,9 @@ async function initDashboard(){
   populateEngineSelector();
   renderEngineOutput(REGIONS[0].name, REGIONS[0].risk);
   loadAllBMKGForecasts();
+  if(document.getElementById('autoRefreshToggle').checked){
+    startAutoRefresh();
+  }
 }
 
 initDashboard();
