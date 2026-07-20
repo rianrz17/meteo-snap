@@ -96,6 +96,19 @@ function decisionFor(stakeholder, topRisk){
 
 function renderPriority(){
   const sorted = [...REGIONS].sort((a,b)=> b.score - a.score);
+
+  const noteEl = document.getElementById('priorityNote');
+  const worstRegionRisk = sorted[0] ? sorted[0].risk : 'Aman';
+  if(officialWarnings && officialWarnings.length > 0 && riskOrder['Tinggi'] < riskOrder[worstRegionRisk]){
+    noteEl.innerHTML = `<div class="priority-mismatch-note">
+      <i class="fa-solid fa-circle-info"></i>
+      Status provinsi di atas mengikuti <b>Peringatan Dini resmi BMKG</b> yang sedang aktif (berbasis nowcast per kecamatan).
+      Skor per-wilayah di bawah ini dari <b>prakiraan 3-jaman</b> titik representatif, sehingga belum tentu menunjukkan level yang sama.
+    </div>`;
+  } else {
+    noteEl.innerHTML = '';
+  }
+
   const el = document.getElementById('priorityList');
   el.innerHTML = sorted.map((r,i)=>{
     const rankCls = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
