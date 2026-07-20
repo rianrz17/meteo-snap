@@ -165,6 +165,8 @@ body{
 }
 .stakeholder-name{font-weight:700; font-size:.85rem;}
 .stakeholder-action{font-size:.8rem; color:var(--ink-soft);}
+.stakeholder-action-list{font-size:.78rem; color:var(--ink-soft); margin:2px 0 0; padding-left:16px;}
+.stakeholder-action-list li{margin-bottom:2px;}
 
 /* product buttons */
 .product-strip{
