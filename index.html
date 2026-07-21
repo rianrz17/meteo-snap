@@ -212,6 +212,24 @@
   </div>
 </div>
 
+<!-- Infografis Modal -->
+<div class="modal fade" id="infoModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="fa-solid fa-image"></i> Infografis — Preview</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <canvas id="infographicCanvas" width="1080" height="1350" style="width:100%; max-width:380px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.25);"></canvas>
+        <div class="brief-actions">
+          <button class="btn btn-sm" id="downloadInfografis" style="background:var(--bmkg-navy); color:#fff;"><i class="fa-solid fa-download"></i> Unduh PNG</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
