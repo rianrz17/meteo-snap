@@ -233,6 +233,225 @@ function buildExecHtml(){
   `;
 }
 
+// ---------- Generator Infografis (Canvas) ----------
+const IMPACT_ICONS = [
+  {label:'Genangan', emoji:'💧'},
+  {label:'Longsor', emoji:'⛰️'},
+  {label:'Pohon Tumbang', emoji:'🌳'},
+  {label:'Angin Kencang', emoji:'💨'},
+  {label:'Gelombang', emoji:'🌊'},
+];
+
+function drawRoundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+  const words = text.split(' ');
+  let line = '';
+  let lines = 0;
+  for(let i=0; i<words.length; i++){
+    const test = line + words[i] + ' ';
+    if(ctx.measureText(test).width > maxWidth && line !== ''){
+      ctx.fillText(line.trim(), x, y + lines*lineHeight);
+      line = words[i] + ' ';
+      lines++;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line.trim(), x, y + lines*lineHeight);
+  return lines + 1;
+}
+
+async function drawInfographic(){
+  const canvas = document.getElementById('infographicCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const topRisk = topRiskOverall();
+  const sorted = [...REGIONS].sort((a,b)=> b.score - a.score);
+  const top5 = sorted.slice(0,5);
+
+  // Background
+  const bgGrad = ctx.createLinearGradient(0,0,0,H);
+  bgGrad.addColorStop(0, '#0a2540');
+  bgGrad.addColorStop(0.55, '#0f4c81');
+  bgGrad.addColorStop(1, '#0a2540');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0,0,W,H);
+
+  // Decorative accent circle
+  ctx.fillStyle = 'rgba(224,165,58,0.10)';
+  ctx.beginPath(); ctx.arc(W-60, 60, 220, 0, Math.PI*2); ctx.fill();
+
+  // Logo + header
+  try{
+    const logoImg = await new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload = ()=> resolve(img);
+      img.onerror = reject;
+      img.src = 'assets/logo-bmkg.png';
+    });
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(90, 90, 46, 0, Math.PI*2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.clip();
+    ctx.drawImage(logoImg, 50, 50, 80, 80);
+    ctx.restore();
+  }catch(e){ /* lanjut tanpa logo kalau gagal dimuat */ }
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 40px sans-serif';
+  ctx.fillText('METEO SNAP', 150, 78);
+  ctx.font = '400 20px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,.8)';
+  ctx.fillText('Smart Meteorological Decision Brief', 150, 106);
+  ctx.font = 'italic 16px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.fillText('Dari Informasi Cuaca Menjadi Keputusan Cepat.', 150, 130);
+
+  // Status Banner
+  const bannerY = 175;
+  const bannerH = 130;
+  ctx.fillStyle = riskColor[topRisk];
+  drawRoundRect(ctx, 60, bannerY, W-120, bannerH, 20);
+  ctx.fill();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 26px sans-serif';
+  ctx.fillText('STATUS CUACA KALIMANTAN TIMUR', W/2, bannerY+42);
+  ctx.font = '700 52px sans-serif';
+  ctx.fillText(`${statusEmoji[topRisk]} ${topRisk.toUpperCase()}`, W/2, bannerY+100);
+
+  // Sub info: waktu update
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,.75)';
+  ctx.font = '18px sans-serif';
+  const now = new Date();
+  const jam = String(now.getHours()).padStart(2,'0') + '.' + String(now.getMinutes()).padStart(2,'0');
+  ctx.fillText(`Update: ${jam} WITA · ${now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}`, W/2, bannerY+bannerH+34);
+
+  // Section: Top Prioritas Wilayah
+  let y = bannerY + bannerH + 80;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#e0a53a';
+  ctx.font = '700 15px sans-serif';
+  ctx.fillText('TOP PRIORITAS WILAYAH', 60, y);
+  y += 30;
+
+  top5.forEach((r, i)=>{
+    const rowH = 68;
+    ctx.fillStyle = 'rgba(255,255,255,.07)';
+    drawRoundRect(ctx, 60, y, W-120, rowH-10, 12);
+    ctx.fill();
+
+    // rank circle
+    ctx.beginPath();
+    ctx.arc(100, y+(rowH-10)/2, 20, 0, Math.PI*2);
+    ctx.fillStyle = i===0 ? riskColor['Tinggi'] : (i===1 ? riskColor['Waspada'] : 'rgba(255,255,255,.25)');
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.font = '700 18px sans-serif';
+    ctx.fillText(String(i+1), 100, y+(rowH-10)/2+6);
+
+    // name + phenomena
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 22px sans-serif';
+    ctx.fillText(r.name, 135, y+30);
+    ctx.font = '15px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.65)';
+    ctx.fillText((r.phenomena||[]).slice(0,2).join(' · '), 135, y+50);
+
+    // risk pill
+    ctx.textAlign = 'right';
+    ctx.font = '700 16px sans-serif';
+    ctx.fillStyle = riskColor[r.risk];
+    ctx.fillText(r.risk.toUpperCase(), W-90, y+35);
+
+    y += rowH;
+  });
+
+  // Section: Potensi Dampak
+  y += 25;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#e0a53a';
+  ctx.font = '700 15px sans-serif';
+  ctx.fillText('POTENSI DAMPAK', 60, y);
+  y += 35;
+
+  const iconBoxW = (W-120-40)/5;
+  IMPACT_ICONS.forEach((ic, i)=>{
+    const bx = 60 + i*(iconBoxW+10);
+    ctx.fillStyle = 'rgba(255,255,255,.07)';
+    drawRoundRect(ctx, bx, y, iconBoxW, 100, 14);
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.font = '34px sans-serif';
+    ctx.fillText(ic.emoji, bx+iconBoxW/2, y+48);
+    ctx.font = '600 12px sans-serif';
+    ctx.fillStyle = '#fff';
+    wrapText(ctx, ic.label, bx+iconBoxW/2, y+72, iconBoxW-10, 15);
+    ctx.textAlign = 'left';
+  });
+  y += 130;
+
+  // Section: Rekomendasi Utama
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#e0a53a';
+  ctx.font = '700 15px sans-serif';
+  ctx.fillText('REKOMENDASI UTAMA', 60, y);
+  y += 32;
+
+  STAKEHOLDERS.slice(0,3).forEach(s=>{
+    const rowH = 66;
+    ctx.fillStyle = 'rgba(255,255,255,.07)';
+    drawRoundRect(ctx, 60, y, W-120, rowH-8, 12);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 18px sans-serif';
+    ctx.fillText(s.name, 78, y+26);
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.fillText('✔ ' + decisionFor(s, topRisk), 78, y+48);
+    y += rowH;
+  });
+
+  // Footer
+  y = H - 55;
+  ctx.strokeStyle = 'rgba(255,255,255,.2)';
+  ctx.beginPath(); ctx.moveTo(60, y-20); ctx.lineTo(W-60, y-20); ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,.6)';
+  ctx.font = '13px sans-serif';
+  ctx.fillText('Stasiun Meteorologi Kelas III APT Pranoto Samarinda · BMKG', W/2, y);
+  ctx.fillText('Data prakiraan: BMKG (data.bmkg.go.id) · Prototipe PKA', W/2, y+18);
+}
+
+document.getElementById('btnInfo').addEventListener('click', async ()=>{
+  new bootstrap.Modal(document.getElementById('infoModal')).show();
+  await drawInfographic();
+});
+
+document.getElementById('downloadInfografis').addEventListener('click', ()=>{
+  const canvas = document.getElementById('infographicCanvas');
+  const link = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+  link.download = `meteo-snap-infografis-${stamp}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
 document.getElementById('generateBtn').addEventListener('click', ()=>{
   document.getElementById('waBubbleContent').innerHTML = buildWaText();
   document.getElementById('execBody').innerHTML = buildExecHtml();
@@ -246,7 +465,6 @@ document.getElementById('btnExec').addEventListener('click', ()=>{
   document.getElementById('execBody').innerHTML = buildExecHtml();
   new bootstrap.Modal(document.getElementById('execModal')).show();
 });
-document.getElementById('btnInfo').addEventListener('click', ()=> alert('Infografis generator — direncanakan pada Sprint 2.'));
 document.getElementById('btnDash').addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
 
 document.getElementById('copyWA').addEventListener('click', ()=>{
